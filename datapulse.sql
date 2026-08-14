@@ -44,3 +44,17 @@ INSERT INTO orders (user_id, total_amount, status) VALUES
 (9, 4700000, 'paid'),
 (10, 1200000, 'paid'),
 (10, 3600000, 'paid');
+
+-- Exercise 2: Composite Indexes
+
+CREATE INDEX idx_orders_user_created
+ON orders(user_id, created_at);
+
+EXPLAIN ANALYZE
+SELECT *
+FROM orders
+WHERE user_id = 2
+ORDER BY created_at DESC;
+
+CREATE INDEX idx_orders_status_created
+ON orders(status, created_at);
