@@ -58,3 +58,79 @@ ORDER BY created_at DESC;
 
 CREATE INDEX idx_orders_status_created
 ON orders(status, created_at);
+
+-- =========================================
+-- Exercise 3: Partial Index
+-- =========================================
+
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(12,2) NOT NULL,
+    stock INTEGER NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+INSERT INTO products (name, price, stock, is_active) VALUES
+('Laptop', 45000000, 10, TRUE),
+('Phone', 25000000, 15, TRUE),
+('Headphones', 3500000, 20, TRUE),
+('Keyboard', 2200000, 0, TRUE),
+('Mouse', 1200000, 30, TRUE),
+('Monitor', 18000000, 5, TRUE),
+('Tablet', 20000000, 0, FALSE),
+('Smart Watch', 8000000, 12, TRUE),
+('Camera', 30000000, 4, FALSE),
+('Speaker', 4500000, 8, TRUE);
+
+CREATE INDEX idx_products_active_stock
+ON products(price)
+WHERE is_active = TRUE AND stock > 0;
+
+EXPLAIN ANALYZE
+SELECT *
+FROM products
+WHERE is_active = TRUE
+  AND stock > 0
+ORDER BY price;
+
+
+-- =========================================
+-- Exercise 4: Covering Index
+-- =========================================
+
+CREATE INDEX idx_orders_monthly_sales
+ON orders(created_at, user_id)
+INCLUDE (total_amount, status);
+
+EXPLAIN ANALYZE
+SELECT
+    DATE_TRUNC('month', created_at) AS month,
+    user_id,
+    SUM(total_amount) AS total_sales
+FROM orders
+GROUP BY
+    DATE_TRUNC('month', created_at),
+    user_id
+ORDER BY month;
+
+
+-- =========================================
+-- Exercise 5: Materialized View
+-- =========================================
+
+CREATE MATERIALIZED VIEW monthly_sales_report AS
+SELECT
+    DATE_TRUNC('month', created_at) AS month,
+    user_id,
+    SUM(total_amount) AS total_sales,
+    COUNT(*) AS order_count
+FROM orders
+GROUP BY
+    DATE_TRUNC('month', created_at),
+    user_id;
+
+EXPLAIN ANALYZE
+SELECT *
+FROM monthly_sales_report
+ORDER BY month;
